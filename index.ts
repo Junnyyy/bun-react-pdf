@@ -1,1 +1,1 @@
-console.log("Hello via Bun!");
+export { renderToHtml } from "./src/render.tsx";
