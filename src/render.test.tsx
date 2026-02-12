@@ -114,3 +114,67 @@ describe("renderToHtml", () => {
     expect(html).toContain("font-weight:");
   });
 });
+
+describe("complex component rendering", () => {
+  test("Dashboard renders SVG elements", async () => {
+    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const html = await renderToHtml(<Dashboard />);
+
+    expect(html).toContain("<svg");
+    expect(html).toContain("<rect");
+    expect(html).toContain("<path");
+    expect(html).toContain("Sales Dashboard");
+  });
+
+  test("Report renders narrative and inline charts", async () => {
+    const { default: Report } = await import("./components/Report.tsx");
+    const html = await renderToHtml(<Report />);
+
+    expect(html).toContain("Quarterly Business Report");
+    expect(html).toContain("Executive Summary");
+    expect(html).toContain("<svg");
+    expect(html).toContain("Confidential");
+  });
+
+  test("Pie chart arcs have valid SVG path d attribute", async () => {
+    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const html = await renderToHtml(<Dashboard />);
+
+    // SVG path data should contain arc commands (A) and move commands (M)
+    const pathDRegex = /d="M[\s\d.]+A[\s\d.]+/;
+    expect(pathDRegex.test(html)).toBe(true);
+  });
+
+  test("conditional formatting produces correct Tailwind classes", async () => {
+    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const html = await renderToHtml(<Dashboard />);
+
+    // Positive trend should have green styling
+    expect(html).toContain("text-green-600");
+    // Negative trend should have red styling
+    expect(html).toContain("text-red-600");
+    // Status badges should be present
+    expect(html).toContain("Above Target");
+    expect(html).toContain("At Risk");
+  });
+
+  test("currency values are formatted correctly", async () => {
+    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const html = await renderToHtml(<Dashboard />);
+
+    // Should contain dollar-formatted values (e.g. $842,000)
+    expect(html).toMatch(/\$[\d,]+/);
+    // Summary card value
+    expect(html).toContain("$2,847,500");
+  });
+
+  test("Report metrics table shows trend arrows", async () => {
+    const { default: Report } = await import("./components/Report.tsx");
+    const html = await renderToHtml(<Report />);
+
+    // Trend arrows rendered as SVG polygons
+    expect(html).toContain("<polygon");
+    // Should contain percentage badges
+    expect(html).toContain("bg-green-100");
+  });
+});
