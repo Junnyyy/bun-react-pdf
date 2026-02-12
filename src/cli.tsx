@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { resolve, basename, join } from "node:path";
+import { mkdir } from "node:fs/promises";
 import { createElement } from "react";
 import { renderToHtml } from "./render.tsx";
 
@@ -18,6 +19,11 @@ if (typeof Component !== "function") {
   process.exit(1);
 }
 
-const html = await renderToHtml(createElement(Component));
-await Bun.write("output.html", html);
-console.log(`Wrote output.html (${html.length} bytes)`);
+const stem = basename(componentPath).replace(/\.(tsx?|jsx?)$/, "");
+const outputDir = "output";
+await mkdir(outputDir, { recursive: true });
+const outputPath = join(outputDir, `${stem}.html`);
+
+const html = await renderToHtml(createElement(Component), { title: stem });
+await Bun.write(outputPath, html);
+console.log(`Wrote ${outputPath} (${html.length} bytes)`);
