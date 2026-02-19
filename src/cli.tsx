@@ -3,10 +3,12 @@ import { mkdir } from "node:fs/promises";
 import { createElement } from "react";
 import { renderToHtml } from "./render.tsx";
 
-const componentPath = process.argv[2];
+const args = process.argv.slice(2);
+const pdfFlag = args.includes("--pdf");
+const componentPath = args.find((arg) => !arg.startsWith("--"));
 
 if (!componentPath) {
-  console.error("Usage: bun run src/cli.tsx <component-file>");
+  console.error("Usage: bun run src/cli.tsx <component-file> [--pdf]");
   process.exit(1);
 }
 
@@ -22,8 +24,16 @@ if (typeof Component !== "function") {
 const stem = basename(componentPath).replace(/\.(tsx?|jsx?)$/, "");
 const outputDir = "output";
 await mkdir(outputDir, { recursive: true });
-const outputPath = join(outputDir, `${stem}.html`);
 
-const html = await renderToHtml(createElement(Component), { title: stem });
-await Bun.write(outputPath, html);
-console.log(`Wrote ${outputPath} (${html.length} bytes)`);
+if (pdfFlag) {
+  const { renderToPdf } = await import("./pdf.tsx");
+  const pdf = await renderToPdf(createElement(Component), { title: stem });
+  const outputPath = join(outputDir, `${stem}.pdf`);
+  await Bun.write(outputPath, pdf);
+  console.log(`Wrote ${outputPath} (${pdf.byteLength} bytes)`);
+} else {
+  const html = await renderToHtml(createElement(Component), { title: stem });
+  const outputPath = join(outputDir, `${stem}.html`);
+  await Bun.write(outputPath, html);
+  console.log(`Wrote ${outputPath} (${html.length} bytes)`);
+}
