@@ -109,3 +109,12 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+## Project Architecture
+
+- `src/render.tsx` — `renderToHtml()` renders React elements to self-contained HTML with inlined Tailwind CSS
+- `src/pdf.tsx` — `htmlToPdf()` and `renderToPdf()` convert HTML/React to PDF via Puppeteer (headless Chrome)
+- `src/cli.tsx` — CLI entry point; supports `--pdf` flag to output PDF instead of HTML
+- `src/components/` — Example components (Invoice, Dashboard, Report)
+- `index.ts` — Public API exports (`renderToHtml`, `htmlToPdf`, `renderToPdf`)
+- PDF generation uses `page.emulateMediaType('screen')` so Tailwind backgrounds render correctly (Puppeteer defaults to `print` media which strips backgrounds)
