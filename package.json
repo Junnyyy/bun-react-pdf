@@ -6,6 +6,8 @@
   "scripts": {
     "render": "bun run src/cli.tsx",
     "render:all": "bun run src/cli.tsx src/components/Invoice.tsx && bun run src/cli.tsx src/components/Dashboard.tsx && bun run src/cli.tsx src/components/Report.tsx",
+    "render:pdf": "bun run src/cli.tsx --pdf",
+    "render:all:pdf": "bun run src/cli.tsx src/components/Invoice.tsx --pdf && bun run src/cli.tsx src/components/Dashboard.tsx --pdf && bun run src/cli.tsx src/components/Report.tsx --pdf",
     "test": "bun test"
   },
   "devDependencies": {
@@ -17,6 +19,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "puppeteer": "^24.37.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.1.18"
