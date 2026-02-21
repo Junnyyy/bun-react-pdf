@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { htmlToPdf, renderToPdf } from "./pdf.tsx";
+import { htmlToPdf, renderToPdf } from "../src/pdf.tsx";
 
 describe("htmlToPdf", () => {
   test("returns a Uint8Array starting with PDF magic bytes", async () => {

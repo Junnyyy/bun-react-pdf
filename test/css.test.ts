@@ -1,6 +1,6 @@
 import { test, expect, describe } from "bun:test";
 import { resolve } from "node:path";
-import { extractCssImports } from "./css.ts";
+import { extractCssImports } from "../src/css.ts";
 
 const fixturesDir = resolve(import.meta.dir, "fixtures");
 

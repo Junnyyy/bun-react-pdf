@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { renderToHtml } from "./render.tsx";
+import { renderToHtml } from "../src/render.tsx";
 
 describe("renderToHtml", () => {
   test("produces a complete HTML document", async () => {
@@ -145,7 +145,7 @@ describe("renderToHtml with css option", () => {
 
 describe("complex component rendering", () => {
   test("Dashboard renders SVG elements", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     expect(html).toContain("<svg");
@@ -155,7 +155,7 @@ describe("complex component rendering", () => {
   });
 
   test("Report renders narrative and inline charts", async () => {
-    const { default: Report } = await import("./components/Report.tsx");
+    const { default: Report } = await import("../src/components/Report.tsx");
     const html = await renderToHtml(<Report />);
 
     expect(html).toContain("Quarterly Business Report");
@@ -165,7 +165,7 @@ describe("complex component rendering", () => {
   });
 
   test("Pie chart arcs have valid SVG path d attribute", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     // SVG path data should contain arc commands (A) and move commands (M)
@@ -174,7 +174,7 @@ describe("complex component rendering", () => {
   });
 
   test("conditional formatting produces correct Tailwind classes", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     // Positive trend should have green styling
@@ -187,7 +187,7 @@ describe("complex component rendering", () => {
   });
 
   test("currency values are formatted correctly", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     // Should contain dollar-formatted values (e.g. $842,000)
@@ -197,7 +197,7 @@ describe("complex component rendering", () => {
   });
 
   test("Report metrics table shows trend arrows", async () => {
-    const { default: Report } = await import("./components/Report.tsx");
+    const { default: Report } = await import("../src/components/Report.tsx");
     const html = await renderToHtml(<Report />);
 
     // Trend arrows rendered as SVG polygons
