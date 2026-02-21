@@ -10,6 +10,7 @@ export interface PdfOptions {
 
 export interface RenderPdfOptions extends PdfOptions {
   title?: string;
+  css?: string;
 }
 
 /**
@@ -40,6 +41,6 @@ export async function renderToPdf(
   element: ReactElement,
   options?: RenderPdfOptions,
 ): Promise<Uint8Array> {
-  const html = await renderToHtml(element, { title: options?.title });
+  const html = await renderToHtml(element, { title: options?.title, css: options?.css });
   return htmlToPdf(html, options);
 }

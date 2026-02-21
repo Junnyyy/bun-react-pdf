@@ -26,6 +26,7 @@ function extractCandidates(html: string): string[] {
 
 export interface RenderOptions {
   title?: string;
+  css?: string; // Custom CSS string, appended after Tailwind
 }
 
 /**
@@ -50,7 +51,7 @@ export async function renderToHtml(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <style>${css}</style>
+  <style>${css}${options?.css ?? ""}</style>
 </head>
 <body>
 ${bodyHtml}
