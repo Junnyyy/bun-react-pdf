@@ -115,6 +115,34 @@ describe("renderToHtml", () => {
   });
 });
 
+describe("renderToHtml with css option", () => {
+  test("includes custom CSS after Tailwind", async () => {
+    const customCss = ".custom-class { border: 2px solid red; }";
+    const html = await renderToHtml(
+      <div className="flex p-4">Hello</div>,
+      { css: customCss },
+    );
+
+    expect(html).toContain(".custom-class");
+    expect(html).toContain("border: 2px solid red");
+    // Custom CSS should come after Tailwind CSS (display: flex from Tailwind)
+    expect(html).toContain("display: flex");
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
+    expect(styleMatch).not.toBeNull();
+    const styleContent = styleMatch![1];
+    const tailwindIdx = styleContent.indexOf("display: flex");
+    const customIdx = styleContent.indexOf(".custom-class");
+    expect(tailwindIdx).toBeLessThan(customIdx);
+  });
+
+  test("works unchanged without css option (backward compat)", async () => {
+    const html = await renderToHtml(<div className="flex">Hello</div>);
+
+    expect(html).toContain("display: flex");
+    expect(html).toContain("<style>");
+  });
+});
+
 describe("complex component rendering", () => {
   test("Dashboard renders SVG elements", async () => {
     const { default: Dashboard } = await import("./components/Dashboard.tsx");
