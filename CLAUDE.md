@@ -112,9 +112,12 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 
 ## Project Architecture
 
-- `src/render.tsx` — `renderToHtml()` renders React elements to self-contained HTML with inlined Tailwind CSS
-- `src/pdf.tsx` — `htmlToPdf()` and `renderToPdf()` convert HTML/React to PDF via Puppeteer (headless Chrome)
-- `src/cli.tsx` — CLI entry point; supports `--pdf` flag to output PDF instead of HTML
-- `src/components/` — Example components (Invoice, Dashboard, Report)
-- `index.ts` — Public API exports (`renderToHtml`, `htmlToPdf`, `renderToPdf`)
+- `src/render.tsx` — `renderToHtml()` renders React elements to self-contained HTML with inlined Tailwind CSS; accepts optional `css` string appended after Tailwind
+- `src/css.ts` — `extractCssImports()` reads a `.tsx` source file, finds `import '*.css'` statements, resolves paths (relative or package), and returns concatenated CSS
+- `src/pdf.tsx` — `htmlToPdf()` and `renderToPdf()` convert HTML/React to PDF via Puppeteer (headless Chrome); `RenderPdfOptions` accepts `css` and threads it to `renderToHtml`
+- `src/cli.tsx` — CLI entry point; supports `--pdf` flag; auto-detects CSS imports from the component file via `extractCssImports()`
+- `src/components/` — Example components (Invoice, Dashboard, Report, StyledCard)
+- `index.ts` — Public API exports (`renderToHtml`, `htmlToPdf`, `renderToPdf`, `extractCssImports`)
+- `test/` — All tests (`render.test.tsx`, `pdf.test.tsx`, `css.test.ts`) and `test/fixtures/` for test fixture `.tsx`/`.css` files
 - PDF generation uses `page.emulateMediaType('screen')` so Tailwind backgrounds render correctly (Puppeteer defaults to `print` media which strips backgrounds)
+- CSS imports in components are detected via regex (`/import\s+['"](.+\.css)['"]/g`), not via a bundler — this means only static import strings are supported

@@ -1,6 +1,6 @@
 # bun-react-pdf
 
-Render React components with Tailwind CSS into self-contained HTML documents and PDFs.
+Render React components with Tailwind CSS into self-contained HTML documents and PDFs. Supports importing custom CSS files from your components.
 
 ## Setup
 
@@ -50,6 +50,35 @@ await Bun.write("output.html", html);
 
 `renderToHtml` returns a complete HTML document with all Tailwind CSS compiled and inlined in a `<style>` tag. No external stylesheets needed.
 
+#### Custom CSS imports
+
+Components can import `.css` files directly. The CLI auto-detects these imports and inlines them alongside Tailwind:
+
+```tsx
+// src/components/StyledCard.tsx
+import './StyledCard.css'
+
+export default function StyledCard() {
+  return <div className="flex p-4 card">Hello</div>
+}
+```
+
+```css
+/* src/components/StyledCard.css */
+.card { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+```
+
+Custom CSS is appended after Tailwind, so it can override utilities when needed.
+
+When using the library API directly, use `extractCssImports` to read CSS from a component file and pass it via the `css` option:
+
+```ts
+import { renderToHtml, extractCssImports } from "./index.ts";
+
+const css = await extractCssImports("./src/components/StyledCard.tsx");
+const html = await renderToHtml(<StyledCard />, { title: "Card", css });
+```
+
 #### PDF output
 
 ```ts
@@ -76,8 +105,9 @@ Both functions return a `Uint8Array` containing the PDF bytes.
 1. Renders the React component to an HTML string via `renderToString` from `react-dom/server`
 2. Extracts Tailwind class candidates from the rendered markup
 3. Compiles only the used Tailwind utilities via the `compile()` API from `tailwindcss`
-4. Wraps everything in a self-contained HTML document
-5. For PDF output, loads the HTML in headless Chrome (Puppeteer) with `screen` media type and generates a PDF with `printBackground: true`
+4. Detects `import '*.css'` statements in the source file and reads the referenced CSS files
+5. Wraps everything in a self-contained HTML document (Tailwind first, then custom CSS)
+6. For PDF output, loads the HTML in headless Chrome (Puppeteer) with `screen` media type and generates a PDF with `printBackground: true`
 
 ## Testing
 

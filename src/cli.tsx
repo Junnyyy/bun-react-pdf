@@ -2,6 +2,7 @@ import { resolve, basename, join } from "node:path";
 import { mkdir } from "node:fs/promises";
 import { createElement } from "react";
 import { renderToHtml } from "./render.tsx";
+import { extractCssImports } from "./css.ts";
 
 const args = process.argv.slice(2);
 const pdfFlag = args.includes("--pdf");
@@ -25,14 +26,16 @@ const stem = basename(componentPath).replace(/\.(tsx?|jsx?)$/, "");
 const outputDir = "output";
 await mkdir(outputDir, { recursive: true });
 
+const css = await extractCssImports(absolutePath);
+
 if (pdfFlag) {
   const { renderToPdf } = await import("./pdf.tsx");
-  const pdf = await renderToPdf(createElement(Component), { title: stem });
+  const pdf = await renderToPdf(createElement(Component), { title: stem, css });
   const outputPath = join(outputDir, `${stem}.pdf`);
   await Bun.write(outputPath, pdf);
   console.log(`Wrote ${outputPath} (${pdf.byteLength} bytes)`);
 } else {
-  const html = await renderToHtml(createElement(Component), { title: stem });
+  const html = await renderToHtml(createElement(Component), { title: stem, css });
   const outputPath = join(outputDir, `${stem}.html`);
   await Bun.write(outputPath, html);
   console.log(`Wrote ${outputPath} (${html.length} bytes)`);

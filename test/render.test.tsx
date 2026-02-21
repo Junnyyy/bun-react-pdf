@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { renderToHtml } from "./render.tsx";
+import { renderToHtml } from "../src/render.tsx";
 
 describe("renderToHtml", () => {
   test("produces a complete HTML document", async () => {
@@ -115,9 +115,37 @@ describe("renderToHtml", () => {
   });
 });
 
+describe("renderToHtml with css option", () => {
+  test("includes custom CSS after Tailwind", async () => {
+    const customCss = ".custom-class { border: 2px solid red; }";
+    const html = await renderToHtml(
+      <div className="flex p-4">Hello</div>,
+      { css: customCss },
+    );
+
+    expect(html).toContain(".custom-class");
+    expect(html).toContain("border: 2px solid red");
+    // Custom CSS should come after Tailwind CSS (display: flex from Tailwind)
+    expect(html).toContain("display: flex");
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
+    expect(styleMatch).not.toBeNull();
+    const styleContent = styleMatch![1];
+    const tailwindIdx = styleContent.indexOf("display: flex");
+    const customIdx = styleContent.indexOf(".custom-class");
+    expect(tailwindIdx).toBeLessThan(customIdx);
+  });
+
+  test("works unchanged without css option (backward compat)", async () => {
+    const html = await renderToHtml(<div className="flex">Hello</div>);
+
+    expect(html).toContain("display: flex");
+    expect(html).toContain("<style>");
+  });
+});
+
 describe("complex component rendering", () => {
   test("Dashboard renders SVG elements", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     expect(html).toContain("<svg");
@@ -127,7 +155,7 @@ describe("complex component rendering", () => {
   });
 
   test("Report renders narrative and inline charts", async () => {
-    const { default: Report } = await import("./components/Report.tsx");
+    const { default: Report } = await import("../src/components/Report.tsx");
     const html = await renderToHtml(<Report />);
 
     expect(html).toContain("Quarterly Business Report");
@@ -137,7 +165,7 @@ describe("complex component rendering", () => {
   });
 
   test("Pie chart arcs have valid SVG path d attribute", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     // SVG path data should contain arc commands (A) and move commands (M)
@@ -146,7 +174,7 @@ describe("complex component rendering", () => {
   });
 
   test("conditional formatting produces correct Tailwind classes", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     // Positive trend should have green styling
@@ -159,7 +187,7 @@ describe("complex component rendering", () => {
   });
 
   test("currency values are formatted correctly", async () => {
-    const { default: Dashboard } = await import("./components/Dashboard.tsx");
+    const { default: Dashboard } = await import("../src/components/Dashboard.tsx");
     const html = await renderToHtml(<Dashboard />);
 
     // Should contain dollar-formatted values (e.g. $842,000)
@@ -169,7 +197,7 @@ describe("complex component rendering", () => {
   });
 
   test("Report metrics table shows trend arrows", async () => {
-    const { default: Report } = await import("./components/Report.tsx");
+    const { default: Report } = await import("../src/components/Report.tsx");
     const html = await renderToHtml(<Report />);
 
     // Trend arrows rendered as SVG polygons
