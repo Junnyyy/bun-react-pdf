@@ -120,10 +120,12 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 - `index.ts` — Public API exports (`renderToHtml`, `htmlToPdf`, `renderToPdf`, `extractCssImports`)
 - `test/` — All tests (`render.test.tsx`, `pdf.test.tsx`, `css.test.ts`) and `test/fixtures/` for test fixture `.tsx`/`.css` files
 - PDF generation uses `page.emulateMediaType('screen')` so Tailwind backgrounds render correctly (Puppeteer defaults to `print` media which strips backgrounds)
-- CSS imports are detected via `Bun.Transpiler.scan()` (AST-level, skips `import type`) and resolved via `import.meta.resolve()` — no hand-rolled extension probing
+- CSS imports are detected via `Bun.Transpiler.scan()` (AST-level, skips `import type`) and resolved via `import.meta.resolve()` with `require.resolve()` fallback for extensionless paths
 - CSS extraction walks the full import graph recursively: sub-components that import CSS are automatically included
 - CSS `@import` rules inside CSS files are inlined for self-contained output; remote URLs (https/http) are preserved
 - `node_modules` code files are not recursed into (only their CSS files are collected directly) — this avoids unpredictable dependency tree walking (learned from Next.js)
 - CSS order follows JS import order (depth-first traversal), matching Next.js and Vite behavior
 - CSS files are deduplicated by resolved absolute path
 - `require.resolve()` in Bun does NOT throw for `https://` URLs — it returns them as-is. Always check for remote URLs before passing to file operations
+- `import.meta.resolve()` does NOT add extensions for relative paths (e.g., `./foo` stays `./foo`). Use `require.resolve()` as fallback for extensionless relative imports
+- CSS `@import` inlining must be sequential (not `Promise.all`) to ensure cross-file deduplication works — if two CSS files both `@import` the same third file, parallel processing would inline it twice
