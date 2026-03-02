@@ -1,0 +1,3 @@
+@import './base-vars.css';
+
+.theme-card { color: var(--color-primary); padding: var(--spacing); }
