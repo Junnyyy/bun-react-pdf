@@ -37,11 +37,14 @@ export async function extractCssImports(filePath: string): Promise<string> {
 
   await walkImports(absolutePath, cssFiles, visited);
 
-  // Read all CSS files, inline their @import rules, and concatenate
+  // Read all CSS files, inline their @import rules, and concatenate.
+  // Sequential processing ensures @import deduplication works correctly —
+  // if theme.css and layout.css both @import base-vars.css, it's only inlined once.
   const inlinedPaths = new Set<string>();
-  const cssChunks = await Promise.all(
-    cssFiles.map((cssPath) => readAndInlineCssImports(cssPath, inlinedPaths)),
-  );
+  const cssChunks: string[] = [];
+  for (const cssPath of cssFiles) {
+    cssChunks.push(await readAndInlineCssImports(cssPath, inlinedPaths));
+  }
 
   return cssChunks.join("\n");
 }
@@ -76,19 +79,11 @@ async function walkImports(
     return;
   }
 
-  const fileUrl = `file://${filePath}`;
-
   for (const imp of imports) {
     if (imp.kind !== "import-statement" && imp.kind !== "require-call") continue;
 
-    let resolvedPath: string;
-    try {
-      const resolvedUrl = import.meta.resolve(imp.path, fileUrl);
-      resolvedPath = new URL(resolvedUrl).pathname;
-    } catch {
-      // Unresolvable (built-in modules, missing packages, etc.)
-      continue;
-    }
+    const resolvedPath = resolveSpecifier(imp.path, filePath);
+    if (!resolvedPath) continue;
 
     if (resolvedPath.endsWith(".css")) {
       // Collect CSS file (deduplicate by path)
@@ -99,6 +94,32 @@ async function walkImports(
       // Recurse into local code files only — skip node_modules internals
       await walkImports(resolvedPath, cssFiles, visited);
     }
+  }
+}
+
+/**
+ * Resolve an import specifier to an absolute file path.
+ * Uses import.meta.resolve for full paths, falls back to require.resolve
+ * for extensionless relative imports (import.meta.resolve doesn't add
+ * extensions for relative paths like ./foo — it returns ./foo as-is).
+ */
+function resolveSpecifier(specifier: string, fromFile: string): string | null {
+  try {
+    const fileUrl = `file://${fromFile}`;
+    const resolvedUrl = import.meta.resolve(specifier, fileUrl);
+    const resolvedPath = new URL(resolvedUrl).pathname;
+
+    // import.meta.resolve returns extensionless paths as-is for relative imports.
+    // Fall back to require.resolve which does proper extension probing.
+    const ext = extname(resolvedPath);
+    if (!ext || (!CODE_EXTENSIONS.has(ext) && ext !== ".css")) {
+      return require.resolve(resolvedPath);
+    }
+
+    return resolvedPath;
+  } catch {
+    // Unresolvable (built-in modules like 'react', 'node:path', etc.)
+    return null;
   }
 }
 
