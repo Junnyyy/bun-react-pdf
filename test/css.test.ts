@@ -196,6 +196,19 @@ describe("extractCssImports - CSS @import inlining", () => {
     const themeIdx = css.indexOf(".theme-card");
     expect(varsIdx).toBeLessThan(themeIdx);
   });
+
+  test("wraps inlined content in @media when @import has a media query", async () => {
+    // @import './mobile.css' screen and (max-width: 768px);
+    const css = await extractCssImports(resolve(fixturesDir, "media-import-component.tsx"));
+
+    // mobile.css content should be wrapped in @media
+    expect(css).toContain("@media screen and (max-width: 768px)");
+    expect(css).toContain(".mobile-only");
+    // The container rule from the host file should not be wrapped
+    expect(css).toContain(".container");
+    // No raw @import should remain
+    expect(css).not.toMatch(/@import\s+['"]/);
+  });
 });
 
 // ─── End-to-end rendering ─────────────────────────────────────────────

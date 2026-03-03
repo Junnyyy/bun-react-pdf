@@ -151,9 +151,10 @@ async function readAndInlineCssImports(
   }
 
   const dir = dirname(cssPath);
-  // Match @import url("..."), @import url('...'), @import url(...),
-  // @import "...", @import '...'
-  const importRegex = /@import\s+(?:url\(\s*['"]?([^'")]+)['"]?\s*\)|['"]([^'"]+)['"]);?/g;
+  // Match full @import statements including optional media queries:
+  //   @import url("...") screen;  @import '...' print;  @import "..." ;
+  // Group 1: url() path, Group 2: string path, Group 3: optional media query
+  const importRegex = /@import\s+(?:url\(\s*['"]?([^'")]+)['"]?\s*\)|['"]([^'"]+)['"])\s*([^;]*)?\s*;?/g;
   let match: RegExpExecArray | null;
 
   const replacements: Array<{ start: number; end: number; content: string }> = [];
@@ -161,6 +162,8 @@ async function readAndInlineCssImports(
   while ((match = importRegex.exec(content)) !== null) {
     const specifier = match[1] ?? match[2];
     if (!specifier) continue;
+
+    const mediaQuery = match[3]?.trim() || "";
 
     // Preserve remote URLs (https://, http://, //) — they're valid in browser CSS
     if (specifier.startsWith("http://") || specifier.startsWith("https://") || specifier.startsWith("//")) {
@@ -178,7 +181,11 @@ async function readAndInlineCssImports(
       continue;
     }
 
-    const inlinedContent = await readAndInlineCssImports(resolvedPath, inlinedPaths);
+    let inlinedContent = await readAndInlineCssImports(resolvedPath, inlinedPaths);
+    // Wrap in @media block if the @import had a media query condition
+    if (mediaQuery && inlinedContent) {
+      inlinedContent = `@media ${mediaQuery} {\n${inlinedContent}\n}`;
+    }
     replacements.push({
       start: match.index,
       end: match.index + match[0].length,
