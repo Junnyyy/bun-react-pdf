@@ -113,11 +113,19 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 ## Project Architecture
 
 - `src/render.tsx` — `renderToHtml()` renders React elements to self-contained HTML with inlined Tailwind CSS; accepts optional `css` string appended after Tailwind
-- `src/css.ts` — `extractCssImports()` reads a `.tsx` source file, finds `import '*.css'` statements, resolves paths (relative or package), and returns concatenated CSS
+- `src/css.ts` — `extractCssImports()` recursively walks the import graph using `Bun.Transpiler.scan()` + `import.meta.resolve()`, collects CSS from all transitive imports in depth-first order, and inlines CSS `@import` rules for self-contained output
 - `src/pdf.tsx` — `htmlToPdf()` and `renderToPdf()` convert HTML/React to PDF via Puppeteer (headless Chrome); `RenderPdfOptions` accepts `css` and threads it to `renderToHtml`
 - `src/cli.tsx` — CLI entry point; supports `--pdf` flag; auto-detects CSS imports from the component file via `extractCssImports()`
 - `src/components/` — Example components (Invoice, Dashboard, Report, StyledCard)
 - `index.ts` — Public API exports (`renderToHtml`, `htmlToPdf`, `renderToPdf`, `extractCssImports`)
 - `test/` — All tests (`render.test.tsx`, `pdf.test.tsx`, `css.test.ts`) and `test/fixtures/` for test fixture `.tsx`/`.css` files
 - PDF generation uses `page.emulateMediaType('screen')` so Tailwind backgrounds render correctly (Puppeteer defaults to `print` media which strips backgrounds)
-- CSS imports in components are detected via regex (`/import\s+['"](.+\.css)['"]/g`), not via a bundler — this means only static import strings are supported
+- CSS imports are detected via `Bun.Transpiler.scan()` (AST-level, skips `import type`) and resolved via `import.meta.resolve()` with `require.resolve()` fallback for extensionless paths
+- CSS extraction walks the full import graph recursively: sub-components that import CSS are automatically included
+- CSS `@import` rules inside CSS files are inlined for self-contained output; remote URLs (https/http) are preserved
+- `node_modules` code files are not recursed into (only their CSS files are collected directly) — this avoids unpredictable dependency tree walking (learned from Next.js)
+- CSS order follows JS import order (depth-first traversal), matching Next.js and Vite behavior
+- CSS files are deduplicated by resolved absolute path
+- `require.resolve()` in Bun does NOT throw for `https://` URLs — it returns them as-is. Always check for remote URLs before passing to file operations
+- `import.meta.resolve()` does NOT add extensions for relative paths (e.g., `./foo` stays `./foo`). Use `require.resolve()` as fallback for extensionless relative imports
+- CSS `@import` inlining must be sequential (not `Promise.all`) to ensure cross-file deduplication works — if two CSS files both `@import` the same third file, parallel processing would inline it twice
